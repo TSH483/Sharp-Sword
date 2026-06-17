@@ -59,6 +59,16 @@ You receive a reference image of a single object. Your task is to generate the
 FINAL validator-compatible JavaScript module directly from that reference
 image.
 
+Before writing a single line of code, perform a silent mental decomposition:
+1. Identify the object class (chair, vase, vehicle, lamp, etc.).
+2. List every distinct visible part with its shape, size relative to the whole,
+   position, and material/color. This is your internal part inventory.
+3. Decide which Three.js primitive (box, cylinder, sphere, lathe, tube,
+   extrude) best approximates each part's silhouette.
+4. Only then start writing code, building each part in order.
+This decomposition step is the single biggest quality lever — skipping it
+causes structural mismatches that no amount of repair can fix.
+
 Output rules:
 1. Return ONLY raw JavaScript source code. No prose, no markdown fences.
 2. The module must contain exactly one top-level export:
@@ -76,12 +86,17 @@ Output rules:
 10. Do not reference the prompt, URLs, or runtime input inside the generated module.
 11. **Pick stable, descriptive `const` names per part** (lowercase,
     underscores — e.g. `seat`, `front_left_leg`, `lampshade`) that match the
-    parts you identify in the reference image: a seat ⇒ `const seat = new
+    parts you identified in your mental inventory: a seat ⇒ `const seat = new
     THREE.Mesh(seatGeom, woodMat);`. For associated geometry/material vars
     use the same stem: `seatGeom`, `seatMat`. Stable names let the visual
     critic point issues at specific code sections via `target_node_id` —
     otherwise repair rounds are blind and regress working parts. Don't
     rename across iterations.
+12. **Code only what you can see.** Do not invent features, extra protrusions,
+    additional rings, spike arrays, overlay patterns, or embellishments not
+    clearly visible in the reference. When in doubt, omit the element rather
+    than guess. A clean simplification scores far higher than an incorrect
+    addition.
 
 Critical API rules (silent-failure traps):
 - **No metalness above 0.7** — this render has NO environment map. Any
@@ -221,6 +236,23 @@ Vehicle modeling playbook:
   silhouette, count, orientation, and attachment correct; then add trim,
   colors, logos, spokes, tread, and small hardware.
 
+Geometric accuracy and distortion prevention:
+- **Match the silhouette first.** Before handling materials or decorations, make
+  sure every major part's bounding shape (height, width, depth) is proportional
+  to the reference. A correctly shaped gray box beats a beautifully textured blob.
+- **Prefer clean primitives over distorted complex ones.** When you cannot
+  faithfully reproduce an organic shape, choose the nearest clean primitive
+  (sphere, lathe profile, simple extrude) rather than a heavily deformed box.
+  A recognizable approximation scores better than an unrecognizable distortion.
+- **Do not alter object class.** If the reference is a ring, build a torus or
+  lathe profile that reads as a ring — not a cylinder or disc. If it is a bird,
+  build a body + wings — not a spiky blob. Preserve the object's fundamental
+  silhouette identity over all other considerations.
+- **Test proportions mentally before committing.** After placing each major part,
+  check whether its size and position still look right relative to the whole.
+  A seat that covers 80% of the height, or a handle that extends 3× the body
+  width, is immediately flagged by the critic as high-severity.
+
 Proportion tuning shortcut:
 - The fastest fix for a `wrong_proportion` issue is usually
   `mesh.scale.set(sx, sy, sz)` BEFORE adding to group, NOT rebuilding the
@@ -335,6 +367,11 @@ mismatches between the render and the reference image.
 
 Critic score (0..1, higher is better): {overall_score}
 
+Before patching, revisit your mental part inventory from the reference image:
+confirm each issue maps to an actual visible feature in the reference — do not
+add geometry that is not present. Fix only what the critic lists; do not
+reshape correct parts.
+
 ## PRESERVE (do NOT change these — they already match the reference)
 
 {matching_block}
@@ -442,6 +479,11 @@ OSD (for reference):
 {osd_json}
 
 Critic score (0..1, higher is better): {overall_score}
+
+Before patching, revisit your mental part inventory and the OSD: each addition
+must correspond to a part that is actually visible in the reference. Do not
+add geometry to "fill in" ambiguous areas — prefer a clean omission over an
+incorrect addition.
 
 ## PRESERVE (do NOT change these — they already match the reference)
 
